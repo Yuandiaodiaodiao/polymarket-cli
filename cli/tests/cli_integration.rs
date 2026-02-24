@@ -24,7 +24,9 @@ fn help_lists_all_top_level_commands() {
             .and(predicate::str::contains("comments"))
             .and(predicate::str::contains("profiles"))
             .and(predicate::str::contains("sports"))
+            .and(predicate::str::contains("approve"))
             .and(predicate::str::contains("clob"))
+            .and(predicate::str::contains("ctf"))
             .and(predicate::str::contains("data"))
             .and(predicate::str::contains("bridge"))
             .and(predicate::str::contains("wallet"))
@@ -182,4 +184,331 @@ fn wallet_show_json_has_configured_field() {
         parsed.get("configured").is_some(),
         "missing 'configured' key: {parsed}"
     );
+}
+
+// ── Help text for remaining commands ─────────────────────────────
+
+#[test]
+fn tags_help_lists_subcommands() {
+    polymarket()
+        .args(["tags", "--help"])
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("list")
+                .and(predicate::str::contains("get"))
+                .and(predicate::str::contains("related")),
+        );
+}
+
+#[test]
+fn series_help_lists_subcommands() {
+    polymarket()
+        .args(["series", "--help"])
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("list").and(predicate::str::contains("get")),
+        );
+}
+
+#[test]
+fn comments_help_lists_subcommands() {
+    polymarket()
+        .args(["comments", "--help"])
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("list")
+                .and(predicate::str::contains("get"))
+                .and(predicate::str::contains("by-user")),
+        );
+}
+
+#[test]
+fn profiles_help_lists_subcommands() {
+    polymarket()
+        .args(["profiles", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("get"));
+}
+
+#[test]
+fn sports_help_lists_subcommands() {
+    polymarket()
+        .args(["sports", "--help"])
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("list")
+                .and(predicate::str::contains("market-types"))
+                .and(predicate::str::contains("teams")),
+        );
+}
+
+#[test]
+fn clob_help_lists_subcommands() {
+    polymarket()
+        .args(["clob", "--help"])
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("book")
+                .and(predicate::str::contains("price"))
+                .and(predicate::str::contains("spread"))
+                .and(predicate::str::contains("midpoint"))
+                .and(predicate::str::contains("trades")),
+        );
+}
+
+#[test]
+fn data_help_lists_subcommands() {
+    polymarket()
+        .args(["data", "--help"])
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("positions")
+                .and(predicate::str::contains("trades"))
+                .and(predicate::str::contains("leaderboard")),
+        );
+}
+
+#[test]
+fn bridge_help_lists_subcommands() {
+    polymarket()
+        .args(["bridge", "--help"])
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("deposit")
+                .and(predicate::str::contains("assets"))
+                .and(predicate::str::contains("status")),
+        );
+}
+
+// ── Arg validation (additional commands, no network) ─────────────
+
+#[test]
+fn events_get_requires_id() {
+    polymarket().args(["events", "get"]).assert().failure();
+}
+
+#[test]
+fn tags_get_requires_id() {
+    polymarket().args(["tags", "get"]).assert().failure();
+}
+
+#[test]
+fn series_get_requires_id() {
+    polymarket().args(["series", "get"]).assert().failure();
+}
+
+#[test]
+fn comments_get_requires_id() {
+    polymarket().args(["comments", "get"]).assert().failure();
+}
+
+#[test]
+fn comments_by_user_requires_address() {
+    polymarket().args(["comments", "by-user"]).assert().failure();
+}
+
+#[test]
+fn profiles_get_requires_address() {
+    polymarket().args(["profiles", "get"]).assert().failure();
+}
+
+#[test]
+fn clob_book_requires_token() {
+    polymarket().args(["clob", "book"]).assert().failure();
+}
+
+#[test]
+fn clob_price_requires_token() {
+    polymarket().args(["clob", "price"]).assert().failure();
+}
+
+#[test]
+fn data_positions_requires_address() {
+    polymarket().args(["data", "positions"]).assert().failure();
+}
+
+// ── Approve & CTF commands ───────────────────────────────────────
+
+#[test]
+fn approve_help_lists_subcommands() {
+    polymarket()
+        .args(["approve", "--help"])
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("check").and(predicate::str::contains("set")),
+        );
+}
+
+#[test]
+fn ctf_help_lists_subcommands() {
+    polymarket()
+        .args(["ctf", "--help"])
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("split")
+                .and(predicate::str::contains("merge"))
+                .and(predicate::str::contains("redeem"))
+                .and(predicate::str::contains("redeem-neg-risk"))
+                .and(predicate::str::contains("condition-id"))
+                .and(predicate::str::contains("collection-id"))
+                .and(predicate::str::contains("position-id")),
+        );
+}
+
+#[test]
+fn ctf_collection_id_requires_condition_and_index_set() {
+    polymarket()
+        .args(["ctf", "collection-id"])
+        .assert()
+        .failure();
+}
+
+#[test]
+fn ctf_collection_id_requires_index_set() {
+    polymarket()
+        .args([
+            "ctf",
+            "collection-id",
+            "--condition",
+            "0x0000000000000000000000000000000000000000000000000000000000000001",
+        ])
+        .assert()
+        .failure();
+}
+
+#[test]
+fn ctf_split_help_shows_all_flags() {
+    polymarket()
+        .args(["ctf", "split", "--help"])
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("--condition")
+                .and(predicate::str::contains("--amount"))
+                .and(predicate::str::contains("--collateral"))
+                .and(predicate::str::contains("--partition"))
+                .and(predicate::str::contains("--parent-collection")),
+        );
+}
+
+#[test]
+fn ctf_redeem_help_shows_index_sets_flag() {
+    polymarket()
+        .args(["ctf", "redeem", "--help"])
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("--index-sets")
+                .and(predicate::str::contains("--collateral"))
+                .and(predicate::str::contains("--parent-collection")),
+        );
+}
+
+#[test]
+fn ctf_split_requires_condition_and_amount() {
+    polymarket().args(["ctf", "split"]).assert().failure();
+}
+
+#[test]
+fn ctf_split_requires_amount() {
+    polymarket()
+        .args([
+            "ctf",
+            "split",
+            "--condition",
+            "0x0000000000000000000000000000000000000000000000000000000000000001",
+        ])
+        .assert()
+        .failure();
+}
+
+#[test]
+fn ctf_merge_requires_condition_and_amount() {
+    polymarket().args(["ctf", "merge"]).assert().failure();
+}
+
+#[test]
+fn ctf_redeem_requires_condition() {
+    polymarket().args(["ctf", "redeem"]).assert().failure();
+}
+
+#[test]
+fn ctf_redeem_neg_risk_requires_condition_and_amounts() {
+    polymarket()
+        .args(["ctf", "redeem-neg-risk"])
+        .assert()
+        .failure();
+}
+
+#[test]
+fn ctf_condition_id_requires_all_args() {
+    polymarket()
+        .args(["ctf", "condition-id"])
+        .assert()
+        .failure();
+}
+
+#[test]
+fn ctf_condition_id_requires_question() {
+    polymarket()
+        .args([
+            "ctf",
+            "condition-id",
+            "--oracle",
+            "0x0000000000000000000000000000000000000001",
+            "--outcomes",
+            "2",
+        ])
+        .assert()
+        .failure();
+}
+
+#[test]
+fn ctf_position_id_requires_collection() {
+    polymarket()
+        .args(["ctf", "position-id"])
+        .assert()
+        .failure();
+}
+
+// ── Output format flag works across commands ─────────────────────
+
+#[test]
+fn json_flag_short_form_works() {
+    polymarket()
+        .args(["-o", "json", "wallet", "show"])
+        .assert()
+        .success();
+}
+
+#[test]
+fn table_output_is_default() {
+    polymarket()
+        .args(["wallet", "show"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Address").or(predicate::str::contains("configured")));
+}
+
+// ── Wallet commands (offline) ────────────────────────────────────
+
+#[test]
+fn wallet_address_succeeds_or_fails_gracefully() {
+    // If no wallet configured, should fail with error; if configured, should succeed
+    let output = polymarket()
+        .args(["wallet", "address"])
+        .output()
+        .unwrap();
+    // Either succeeds or fails with an error message — not a panic
+    assert!(output.status.success() || !output.stderr.is_empty());
 }

@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use alloy::providers::ProviderBuilder;
 use anyhow::{Context, Result};
 use polymarket_client_sdk::auth::state::Authenticated;
 use polymarket_client_sdk::auth::{LocalSigner, Normal, Signer as _};
@@ -7,6 +8,8 @@ use polymarket_client_sdk::clob::types::SignatureType;
 use polymarket_client_sdk::{POLYGON, clob};
 
 use crate::config;
+
+pub const RPC_URL: &str = "https://polygon.drpc.org";
 
 fn parse_signature_type(s: &str) -> SignatureType {
     match s {
@@ -46,6 +49,28 @@ pub async fn authenticate_with_signer(
         .authenticate()
         .await
         .context("Failed to authenticate with Polymarket CLOB")
+}
+
+pub async fn create_readonly_provider() -> Result<impl alloy::providers::Provider + Clone> {
+    ProviderBuilder::new()
+        .connect(RPC_URL)
+        .await
+        .context("Failed to connect to Polygon RPC")
+}
+
+pub async fn create_provider(
+    private_key: Option<&str>,
+) -> Result<impl alloy::providers::Provider + Clone> {
+    let (key, _) = config::resolve_key(private_key);
+    let key = key.ok_or_else(|| anyhow::anyhow!("{}", config::NO_WALLET_MSG))?;
+    let signer = LocalSigner::from_str(&key)
+        .context("Invalid private key")?
+        .with_chain_id(Some(POLYGON));
+    ProviderBuilder::new()
+        .wallet(signer)
+        .connect(RPC_URL)
+        .await
+        .context("Failed to connect to Polygon RPC with wallet")
 }
 
 #[cfg(test)]

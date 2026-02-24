@@ -48,8 +48,12 @@ enum Commands {
     Profiles(commands::profiles::ProfilesArgs),
     /// Sports metadata and teams
     Sports(commands::sports::SportsArgs),
+    /// Check and set contract approvals for trading
+    Approve(commands::approve::ApproveArgs),
     /// Interact with the CLOB (order book, trading, balances)
     Clob(commands::clob::ClobArgs),
+    /// CTF operations: split, merge, redeem positions
+    Ctf(commands::ctf::CtfArgs),
     /// Query on-chain data (positions, trades, leaderboards)
     Data(commands::data::DataArgs),
     /// Bridge assets from other chains to Polymarket
@@ -144,6 +148,9 @@ pub(crate) async fn run(cli: Cli) -> anyhow::Result<()> {
             )
             .await
         }
+        Commands::Approve(args) => {
+            commands::approve::execute(args, cli.output, cli.private_key.as_deref()).await
+        }
         Commands::Clob(args) => {
             commands::clob::execute(
                 args,
@@ -152,6 +159,9 @@ pub(crate) async fn run(cli: Cli) -> anyhow::Result<()> {
                 cli.signature_type.as_deref(),
             )
             .await
+        }
+        Commands::Ctf(args) => {
+            commands::ctf::execute(args, cli.output, cli.private_key.as_deref()).await
         }
         Commands::Data(args) => {
             commands::data::execute(

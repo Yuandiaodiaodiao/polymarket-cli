@@ -70,19 +70,19 @@ pub fn execute() -> Result<()> {
 
     let address = if config::config_exists() {
         let (key, source) = config::resolve_key(None);
-        if let Some(k) = &key {
-            if let Ok(signer) = LocalSigner::from_str(k) {
-                let addr = signer.address();
-                println!("  ✓ Wallet already configured ({})", source.label());
-                println!("    Address: {addr}");
-                println!();
+        if let Some(k) = &key
+            && let Ok(signer) = LocalSigner::from_str(k)
+        {
+            let addr = signer.address();
+            println!("  ✓ Wallet already configured ({})", source.label());
+            println!("    Address: {addr}");
+            println!();
 
-                if !prompt_yn("  Reconfigure wallet?", false)? {
-                    finish_setup(addr)?;
-                    return Ok(());
-                }
-                println!();
+            if !prompt_yn("  Reconfigure wallet?", false)? {
+                finish_setup(addr)?;
+                return Ok(());
             }
+            println!();
         }
         setup_wallet()?
     } else {
@@ -170,9 +170,8 @@ fn finish_setup(address: Address) -> Result<()> {
     // ── Step 4: Approve Contracts ─────────────────────────────────
     step_header(4, total, "Approve Contracts");
 
-    println!("  ○ USDC approval        (coming soon)");
-    println!("  ○ CTF Exchange         (coming soon)");
-    println!("  ○ Neg Risk Exchange    (coming soon)");
+    println!("  Run `polymarket approve set` to approve contracts for trading.");
+    println!("  Or `polymarket approve check` to see current approval status.");
 
     println!();
     println!("  ────────────────────────────────────");

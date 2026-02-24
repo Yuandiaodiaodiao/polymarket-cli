@@ -992,3 +992,83 @@ pub async fn execute(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── parse_token_id ──────────────────────────────────────────────
+
+    #[test]
+    fn parse_token_id_valid_numeric() {
+        let id = parse_token_id("12345").unwrap();
+        assert_eq!(id, U256::from(12345u64));
+    }
+
+    #[test]
+    fn parse_token_id_large_number() {
+        let id =
+            parse_token_id("48331043336612883890938759509493159234755048973583954730006854632066573").unwrap();
+        assert!(id > U256::ZERO);
+    }
+
+    #[test]
+    fn parse_token_id_zero() {
+        let id = parse_token_id("0").unwrap();
+        assert_eq!(id, U256::ZERO);
+    }
+
+    #[test]
+    fn parse_token_id_invalid() {
+        assert!(parse_token_id("abc").is_err());
+        assert!(parse_token_id("12.34").is_err());
+        assert!(parse_token_id("-1").is_err());
+    }
+
+    // ── parse_token_ids ─────────────────────────────────────────────
+
+    #[test]
+    fn parse_token_ids_single() {
+        let ids = parse_token_ids("100").unwrap();
+        assert_eq!(ids, vec![U256::from(100u64)]);
+    }
+
+    #[test]
+    fn parse_token_ids_multiple() {
+        let ids = parse_token_ids("1,2,3").unwrap();
+        assert_eq!(ids, vec![U256::from(1u64), U256::from(2u64), U256::from(3u64)]);
+    }
+
+    #[test]
+    fn parse_token_ids_with_spaces() {
+        let ids = parse_token_ids("1, 2, 3").unwrap();
+        assert_eq!(ids, vec![U256::from(1u64), U256::from(2u64), U256::from(3u64)]);
+    }
+
+    #[test]
+    fn parse_token_ids_invalid_entry() {
+        assert!(parse_token_ids("1,abc,3").is_err());
+    }
+
+    // ── parse_date ──────────────────────────────────────────────────
+
+    #[test]
+    fn parse_date_valid() {
+        let d = parse_date("2024-06-15").unwrap();
+        assert_eq!(d.to_string(), "2024-06-15");
+    }
+
+    #[test]
+    fn parse_date_leap_day() {
+        let d = parse_date("2024-02-29").unwrap();
+        assert_eq!(d.to_string(), "2024-02-29");
+    }
+
+    #[test]
+    fn parse_date_invalid_format() {
+        assert!(parse_date("06/15/2024").is_err());
+        assert!(parse_date("2024-13-01").is_err());
+        assert!(parse_date("not-a-date").is_err());
+        assert!(parse_date("").is_err());
+    }
+}
