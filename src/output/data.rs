@@ -18,12 +18,12 @@ fn format_market(m: &Market) -> String {
     }
 }
 
-pub fn print_positions(positions: &[Position], output: &OutputFormat) {
+pub fn print_positions(positions: &[Position], output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if positions.is_empty() {
                 println!("No positions found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -78,17 +78,21 @@ pub fn print_positions(positions: &[Position], output: &OutputFormat) {
                     })
                 })
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_closed_positions(positions: &[ClosedPosition], output: &OutputFormat) {
+pub fn print_closed_positions(
+    positions: &[ClosedPosition],
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if positions.is_empty() {
                 println!("No closed positions found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -132,17 +136,18 @@ pub fn print_closed_positions(positions: &[ClosedPosition], output: &OutputForma
                     })
                 })
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_value(values: &[Value], output: &OutputFormat) {
+pub fn print_value(values: &[Value], output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if values.is_empty() {
                 println!("No value data found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -166,33 +171,31 @@ pub fn print_value(values: &[Value], output: &OutputFormat) {
                 .iter()
                 .map(|v| json!({"user": v.user.to_string(), "value": v.value.to_string()}))
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_traded(t: &Traded, output: &OutputFormat) {
+pub fn print_traded(t: &Traded, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => println!("{}: {} markets traded", t.user, t.traded),
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({
-                    "user": t.user.to_string(),
-                    "traded": t.traded,
-                }))
-                .unwrap()
-            );
+            super::print_json(&json!({
+                "user": t.user.to_string(),
+                "traded": t.traded,
+            }))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_trades(trades: &[Trade], output: &OutputFormat) {
+pub fn print_trades(trades: &[Trade], output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if trades.is_empty() {
                 println!("No trades found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -239,17 +242,18 @@ pub fn print_trades(trades: &[Trade], output: &OutputFormat) {
                     })
                 })
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_activity(activity: &[Activity], output: &OutputFormat) {
+pub fn print_activity(activity: &[Activity], output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if activity.is_empty() {
                 println!("No activity found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -292,17 +296,18 @@ pub fn print_activity(activity: &[Activity], output: &OutputFormat) {
                     })
                 })
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_holders(meta_holders: &[MetaHolder], output: &OutputFormat) {
+pub fn print_holders(meta_holders: &[MetaHolder], output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if meta_holders.is_empty() {
                 println!("No holders found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -354,17 +359,18 @@ pub fn print_holders(meta_holders: &[MetaHolder], output: &OutputFormat) {
                     json!({"token": mh.token.to_string(), "holders": holders})
                 })
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_open_interest(oi: &[OpenInterest], output: &OutputFormat) {
+pub fn print_open_interest(oi: &[OpenInterest], output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if oi.is_empty() {
                 println!("No open interest data found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -388,17 +394,18 @@ pub fn print_open_interest(oi: &[OpenInterest], output: &OutputFormat) {
                 .iter()
                 .map(|o| json!({"market": format_market(&o.market), "value": o.value.to_string()}))
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_live_volume(volume: &[LiveVolume], output: &OutputFormat) {
+pub fn print_live_volume(volume: &[LiveVolume], output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if volume.is_empty() {
                 println!("No volume data found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -433,17 +440,21 @@ pub fn print_live_volume(volume: &[LiveVolume], output: &OutputFormat) {
                     json!({"total": v.total.to_string(), "markets": markets})
                 })
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_leaderboard(entries: &[TraderLeaderboardEntry], output: &OutputFormat) {
+pub fn print_leaderboard(
+    entries: &[TraderLeaderboardEntry],
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if entries.is_empty() {
                 println!("No leaderboard entries found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -481,17 +492,21 @@ pub fn print_leaderboard(entries: &[TraderLeaderboardEntry], output: &OutputForm
                     })
                 })
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_builder_leaderboard(entries: &[BuilderLeaderboardEntry], output: &OutputFormat) {
+pub fn print_builder_leaderboard(
+    entries: &[BuilderLeaderboardEntry],
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if entries.is_empty() {
                 println!("No builder leaderboard entries found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -529,17 +544,21 @@ pub fn print_builder_leaderboard(entries: &[BuilderLeaderboardEntry], output: &O
                     })
                 })
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_builder_volume(entries: &[BuilderVolumeEntry], output: &OutputFormat) {
+pub fn print_builder_volume(
+    entries: &[BuilderVolumeEntry],
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if entries.is_empty() {
                 println!("No builder volume data found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -581,7 +600,8 @@ pub fn print_builder_volume(entries: &[BuilderVolumeEntry], output: &OutputForma
                     })
                 })
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }

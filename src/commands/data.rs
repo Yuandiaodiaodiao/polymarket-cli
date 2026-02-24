@@ -190,9 +190,36 @@ impl From<OrderBy> for polymarket_client_sdk::data::types::LeaderboardOrderBy {
     }
 }
 
-#[allow(clippy::too_many_lines)]
 pub async fn execute(client: &data::Client, args: DataArgs, output: OutputFormat) -> Result<()> {
     match args.command {
+        // User-focused queries (positions, trades, activity, value)
+        DataCommand::Positions { .. }
+        | DataCommand::ClosedPositions { .. }
+        | DataCommand::Value { .. }
+        | DataCommand::Traded { .. }
+        | DataCommand::Trades { .. }
+        | DataCommand::Activity { .. } => execute_user(client, args.command, &output).await,
+
+        // Market-focused queries (holders, open interest, volume)
+        DataCommand::Holders { .. }
+        | DataCommand::OpenInterest { .. }
+        | DataCommand::Volume { .. } => execute_market(client, args.command, &output).await,
+
+        // Leaderboard queries
+        DataCommand::Leaderboard { .. }
+        | DataCommand::BuilderLeaderboard { .. }
+        | DataCommand::BuilderVolume { .. } => {
+            execute_leaderboard(client, args.command, &output).await
+        }
+    }
+}
+
+async fn execute_user(
+    client: &data::Client,
+    command: DataCommand,
+    output: &OutputFormat,
+) -> Result<()> {
+    match command {
         DataCommand::Positions {
             address,
             limit,
@@ -205,7 +232,7 @@ pub async fn execute(client: &data::Client, args: DataArgs, output: OutputFormat
                 .build();
 
             let positions = client.positions(&request).await?;
-            print_positions(&positions, &output);
+            print_positions(&positions, output)?;
         }
 
         DataCommand::ClosedPositions {
@@ -220,7 +247,7 @@ pub async fn execute(client: &data::Client, args: DataArgs, output: OutputFormat
                 .build();
 
             let positions = client.closed_positions(&request).await?;
-            print_closed_positions(&positions, &output);
+            print_closed_positions(&positions, output)?;
         }
 
         DataCommand::Value { address } => {
@@ -229,7 +256,7 @@ pub async fn execute(client: &data::Client, args: DataArgs, output: OutputFormat
                 .build();
 
             let values = client.value(&request).await?;
-            print_value(&values, &output);
+            print_value(&values, output)?;
         }
 
         DataCommand::Traded { address } => {
@@ -238,7 +265,7 @@ pub async fn execute(client: &data::Client, args: DataArgs, output: OutputFormat
                 .build();
 
             let traded = client.traded(&request).await?;
-            print_traded(&traded, &output);
+            print_traded(&traded, output)?;
         }
 
         DataCommand::Trades {
@@ -253,7 +280,7 @@ pub async fn execute(client: &data::Client, args: DataArgs, output: OutputFormat
                 .build();
 
             let trades = client.trades(&request).await?;
-            print_trades(&trades, &output);
+            print_trades(&trades, output)?;
         }
 
         DataCommand::Activity {
@@ -268,9 +295,21 @@ pub async fn execute(client: &data::Client, args: DataArgs, output: OutputFormat
                 .build();
 
             let activity = client.activity(&request).await?;
-            print_activity(&activity, &output);
+            print_activity(&activity, output)?;
         }
 
+        _ => unreachable!(),
+    }
+
+    Ok(())
+}
+
+async fn execute_market(
+    client: &data::Client,
+    command: DataCommand,
+    output: &OutputFormat,
+) -> Result<()> {
+    match command {
         DataCommand::Holders { market, limit } => {
             let cid = parse_condition_id(&market)?;
             let request = HoldersRequest::builder()
@@ -279,7 +318,7 @@ pub async fn execute(client: &data::Client, args: DataArgs, output: OutputFormat
                 .build();
 
             let holders = client.holders(&request).await?;
-            print_holders(&holders, &output);
+            print_holders(&holders, output)?;
         }
 
         DataCommand::OpenInterest { market } => {
@@ -287,15 +326,27 @@ pub async fn execute(client: &data::Client, args: DataArgs, output: OutputFormat
             let request = OpenInterestRequest::builder().markets(vec![cid]).build();
 
             let oi = client.open_interest(&request).await?;
-            print_open_interest(&oi, &output);
+            print_open_interest(&oi, output)?;
         }
 
         DataCommand::Volume { id } => {
             let request = LiveVolumeRequest::builder().id(id).build();
             let volume = client.live_volume(&request).await?;
-            print_live_volume(&volume, &output);
+            print_live_volume(&volume, output)?;
         }
 
+        _ => unreachable!(),
+    }
+
+    Ok(())
+}
+
+async fn execute_leaderboard(
+    client: &data::Client,
+    command: DataCommand,
+    output: &OutputFormat,
+) -> Result<()> {
+    match command {
         DataCommand::Leaderboard {
             period,
             order_by,
@@ -310,7 +361,7 @@ pub async fn execute(client: &data::Client, args: DataArgs, output: OutputFormat
                 .build();
 
             let entries = client.leaderboard(&request).await?;
-            print_leaderboard(&entries, &output);
+            print_leaderboard(&entries, output)?;
         }
 
         DataCommand::BuilderLeaderboard {
@@ -325,7 +376,7 @@ pub async fn execute(client: &data::Client, args: DataArgs, output: OutputFormat
                 .build();
 
             let entries = client.builder_leaderboard(&request).await?;
-            print_builder_leaderboard(&entries, &output);
+            print_builder_leaderboard(&entries, output)?;
         }
 
         DataCommand::BuilderVolume { period } => {
@@ -334,8 +385,10 @@ pub async fn execute(client: &data::Client, args: DataArgs, output: OutputFormat
                 .build();
 
             let entries = client.builder_volume(&request).await?;
-            print_builder_volume(&entries, &output);
+            print_builder_volume(&entries, output)?;
         }
+
+        _ => unreachable!(),
     }
 
     Ok(())

@@ -44,12 +44,12 @@ pub async fn execute(
                 .build();
 
             let response = client.deposit(&request).await?;
-            print_deposit(&response, &output);
+            print_deposit(&response, &output)?;
         }
 
         BridgeCommand::SupportedAssets => {
             let response = client.supported_assets().await?;
-            print_supported_assets(&response, &output);
+            print_supported_assets(&response, &output)?;
         }
 
         BridgeCommand::Status { address } => {
@@ -57,7 +57,7 @@ pub async fn execute(
             let request = StatusRequest::builder().address(&address).build();
 
             let response = client.status(&request).await?;
-            print_status(&response, &output);
+            print_status(&response, &output)?;
         }
     }
 

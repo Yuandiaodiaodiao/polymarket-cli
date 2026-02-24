@@ -9,7 +9,7 @@ use tabled::{Table, Tabled};
 
 use super::{OutputFormat, detail_field, format_decimal, print_detail_table};
 
-pub fn print_deposit(response: &DepositResponse, output: &OutputFormat) {
+pub fn print_deposit(response: &DepositResponse, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             let mut rows = Vec::new();
@@ -28,17 +28,21 @@ pub fn print_deposit(response: &DepositResponse, output: &OutputFormat) {
                 "btc": response.address.btc,
                 "note": response.note,
             });
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_supported_assets(response: &SupportedAssetsResponse, output: &OutputFormat) {
+pub fn print_supported_assets(
+    response: &SupportedAssetsResponse,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if response.supported_assets.is_empty() {
                 println!("No supported assets found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -86,9 +90,10 @@ pub fn print_supported_assets(response: &SupportedAssetsResponse, output: &Outpu
                     })
                 })
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
 fn format_status(s: &DepositTransactionStatus) -> &'static str {
@@ -103,12 +108,12 @@ fn format_status(s: &DepositTransactionStatus) -> &'static str {
     }
 }
 
-pub fn print_status(response: &StatusResponse, output: &OutputFormat) {
+pub fn print_status(response: &StatusResponse, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if response.transactions.is_empty() {
                 println!("No transactions found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -160,9 +165,10 @@ pub fn print_status(response: &StatusResponse, output: &OutputFormat) {
                     })
                 })
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
 #[cfg(test)]

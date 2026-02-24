@@ -21,40 +21,36 @@ use super::{OutputFormat, format_decimal, truncate};
 /// Base64-encoded empty cursor returned by the CLOB API when there are no more pages.
 const END_CURSOR: &str = "LTE=";
 
-pub fn print_ok(result: &str, output: &OutputFormat) {
+pub fn print_ok(result: &str, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => println!("CLOB API: {result}"),
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({"status": result})).unwrap()
-            );
+            super::print_json(&json!({"status": result}))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_price(result: &PriceResponse, output: &OutputFormat) {
+pub fn print_price(result: &PriceResponse, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => println!("Price: {}", result.price),
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({"price": result.price.to_string()})).unwrap()
-            );
+            super::print_json(&json!({"price": result.price.to_string()}))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_batch_prices(result: &PricesResponse, output: &OutputFormat) {
+pub fn print_batch_prices(result: &PricesResponse, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             let Some(prices) = &result.prices else {
                 println!("No prices available.");
-                return;
+                return Ok(());
             };
             if prices.is_empty() {
                 println!("No prices available.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -91,29 +87,28 @@ pub fn print_batch_prices(result: &PricesResponse, output: &OutputFormat) {
                     })
                     .collect::<serde_json::Map<String, serde_json::Value>>()
             });
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_midpoint(result: &MidpointResponse, output: &OutputFormat) {
+pub fn print_midpoint(result: &MidpointResponse, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => println!("Midpoint: {}", result.mid),
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({"midpoint": result.mid.to_string()})).unwrap()
-            );
+            super::print_json(&json!({"midpoint": result.mid.to_string()}))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_midpoints(result: &MidpointsResponse, output: &OutputFormat) {
+pub fn print_midpoints(result: &MidpointsResponse, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.midpoints.is_empty() {
                 println!("No midpoints available.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -139,34 +134,32 @@ pub fn print_midpoints(result: &MidpointsResponse, output: &OutputFormat) {
                 .iter()
                 .map(|(id, mid)| (id.to_string(), json!(mid.to_string())))
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_spread(result: &SpreadResponse, output: &OutputFormat) {
+pub fn print_spread(result: &SpreadResponse, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => println!("Spread: {}", result.spread),
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({"spread": result.spread.to_string()}))
-                    .unwrap()
-            );
+            super::print_json(&json!({"spread": result.spread.to_string()}))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_spreads(result: &SpreadsResponse, output: &OutputFormat) {
+pub fn print_spreads(result: &SpreadsResponse, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             let Some(spreads) = &result.spreads else {
                 println!("No spreads available.");
-                return;
+                return Ok(());
             };
             if spreads.is_empty() {
                 println!("No spreads available.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -192,9 +185,10 @@ pub fn print_spreads(result: &SpreadsResponse, output: &OutputFormat) {
                     .map(|(id, spread)| (id.to_string(), json!(spread.to_string())))
                     .collect::<serde_json::Map<String, serde_json::Value>>()
             });
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
 fn order_book_to_json(book: &OrderBookSummaryResponse) -> serde_json::Value {
@@ -221,7 +215,10 @@ fn order_book_to_json(book: &OrderBookSummaryResponse) -> serde_json::Value {
     })
 }
 
-pub fn print_order_book(result: &OrderBookSummaryResponse, output: &OutputFormat) {
+pub fn print_order_book(
+    result: &OrderBookSummaryResponse,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             println!("Market: {}", result.market);
@@ -277,57 +274,62 @@ pub fn print_order_book(result: &OrderBookSummaryResponse, output: &OutputFormat
             }
         }
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&order_book_to_json(result)).unwrap()
-            );
+            super::print_json(&order_book_to_json(result))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_order_books(result: &[OrderBookSummaryResponse], output: &OutputFormat) {
+pub fn print_order_books(
+    result: &[OrderBookSummaryResponse],
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.is_empty() {
                 println!("No order books found.");
-                return;
+                return Ok(());
             }
             for (i, book) in result.iter().enumerate() {
                 if i > 0 {
                     println!();
                 }
-                print_order_book(book, output);
+                print_order_book(book, output)?;
             }
         }
         OutputFormat::Json => {
             let data: Vec<_> = result.iter().map(order_book_to_json).collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_last_trade(result: &LastTradePriceResponse, output: &OutputFormat) {
+pub fn print_last_trade(
+    result: &LastTradePriceResponse,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => println!("Last Trade: {} ({})", result.price, result.side),
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({
-                    "price": result.price.to_string(),
-                    "side": result.side.to_string(),
-                }))
-                .unwrap()
-            );
+            super::print_json(&json!({
+                "price": result.price.to_string(),
+                "side": result.side.to_string(),
+            }))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_last_trades_prices(result: &[LastTradesPricesResponse], output: &OutputFormat) {
+pub fn print_last_trades_prices(
+    result: &[LastTradesPricesResponse],
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.is_empty() {
                 println!("No last trade prices found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -360,12 +362,13 @@ pub fn print_last_trades_prices(result: &[LastTradesPricesResponse], output: &Ou
                     })
                 })
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_clob_market(result: &MarketResponse, output: &OutputFormat) {
+pub fn print_clob_market(result: &MarketResponse, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             let mut rows = vec![
@@ -405,17 +408,21 @@ pub fn print_clob_market(result: &MarketResponse, output: &OutputFormat) {
             super::print_detail_table(rows);
         }
         OutputFormat::Json => {
-            println!("{}", serde_json::to_string_pretty(result).unwrap());
+            super::print_json(result)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_clob_markets(result: &Page<MarketResponse>, output: &OutputFormat) {
+pub fn print_clob_markets(
+    result: &Page<MarketResponse>,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.data.is_empty() {
                 println!("No markets found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -445,17 +452,21 @@ pub fn print_clob_markets(result: &Page<MarketResponse>, output: &OutputFormat) 
             }
         }
         OutputFormat::Json => {
-            println!("{}", serde_json::to_string_pretty(result).unwrap());
+            super::print_json(result)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_simplified_markets(result: &Page<SimplifiedMarketResponse>, output: &OutputFormat) {
+pub fn print_simplified_markets(
+    result: &Page<SimplifiedMarketResponse>,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.data.is_empty() {
                 println!("No markets found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -490,63 +501,59 @@ pub fn print_simplified_markets(result: &Page<SimplifiedMarketResponse>, output:
             }
         }
         OutputFormat::Json => {
-            println!("{}", serde_json::to_string_pretty(result).unwrap());
+            super::print_json(result)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_tick_size(result: &TickSizeResponse, output: &OutputFormat) {
+pub fn print_tick_size(result: &TickSizeResponse, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             println!("Tick size: {}", result.minimum_tick_size.as_decimal());
         }
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({
-                    "minimum_tick_size": result.minimum_tick_size.as_decimal().to_string(),
-                }))
-                .unwrap()
-            );
+            super::print_json(&json!({
+                "minimum_tick_size": result.minimum_tick_size.as_decimal().to_string(),
+            }))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_fee_rate(result: &FeeRateResponse, output: &OutputFormat) {
+pub fn print_fee_rate(result: &FeeRateResponse, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             println!("Fee rate: {} bps", result.base_fee);
         }
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({
-                    "base_fee_bps": result.base_fee,
-                }))
-                .unwrap()
-            );
+            super::print_json(&json!({
+                "base_fee_bps": result.base_fee,
+            }))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_neg_risk(result: &NegRiskResponse, output: &OutputFormat) {
+pub fn print_neg_risk(result: &NegRiskResponse, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => println!("Neg risk: {}", result.neg_risk),
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({"neg_risk": result.neg_risk})).unwrap()
-            );
+            super::print_json(&json!({"neg_risk": result.neg_risk}))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_price_history(result: &PriceHistoryResponse, output: &OutputFormat) {
+pub fn print_price_history(
+    result: &PriceHistoryResponse,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.history.is_empty() {
                 println!("No price history found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -575,12 +582,13 @@ pub fn print_price_history(result: &PriceHistoryResponse, output: &OutputFormat)
                 .iter()
                 .map(|p| json!({"timestamp": p.t, "price": p.p.to_string()}))
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_server_time(timestamp: i64, output: &OutputFormat) {
+pub fn print_server_time(timestamp: i64, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             let dt = chrono::DateTime::from_timestamp(timestamp, 0);
@@ -595,15 +603,13 @@ pub fn print_server_time(timestamp: i64, output: &OutputFormat) {
             }
         }
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({"timestamp": timestamp})).unwrap()
-            );
+            super::print_json(&json!({"timestamp": timestamp}))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_geoblock(result: &GeoblockResponse, output: &OutputFormat) {
+pub fn print_geoblock(result: &GeoblockResponse, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             println!("Blocked: {}", result.blocked);
@@ -612,26 +618,23 @@ pub fn print_geoblock(result: &GeoblockResponse, output: &OutputFormat) {
             println!("Region: {}", result.region);
         }
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({
-                    "blocked": result.blocked,
-                    "ip": result.ip,
-                    "country": result.country,
-                    "region": result.region,
-                }))
-                .unwrap()
-            );
+            super::print_json(&json!({
+                "blocked": result.blocked,
+                "ip": result.ip,
+                "country": result.country,
+                "region": result.region,
+            }))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_orders(result: &Page<OpenOrderResponse>, output: &OutputFormat) {
+pub fn print_orders(result: &Page<OpenOrderResponse>, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.data.is_empty() {
                 println!("No open orders.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -691,12 +694,13 @@ pub fn print_orders(result: &Page<OpenOrderResponse>, output: &OutputFormat) {
                 })
                 .collect();
             let wrapper = json!({"data": data, "next_cursor": result.next_cursor});
-            println!("{}", serde_json::to_string_pretty(&wrapper).unwrap());
+            super::print_json(&wrapper)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_order_detail(result: &OpenOrderResponse, output: &OutputFormat) {
+pub fn print_order_detail(result: &OpenOrderResponse, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             let rows = vec![
@@ -734,9 +738,10 @@ pub fn print_order_detail(result: &OpenOrderResponse, output: &OutputFormat) {
                 "expiration": result.expiration.to_rfc3339(),
                 "associate_trades": result.associate_trades,
             });
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
 fn post_order_to_json(r: &PostOrderResponse) -> serde_json::Value {
@@ -757,7 +762,10 @@ fn post_order_to_json(r: &PostOrderResponse) -> serde_json::Value {
     })
 }
 
-pub fn print_post_order_result(result: &PostOrderResponse, output: &OutputFormat) {
+pub fn print_post_order_result(
+    result: &PostOrderResponse,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             println!("Order ID: {}", result.order_id);
@@ -772,32 +780,37 @@ pub fn print_post_order_result(result: &PostOrderResponse, output: &OutputFormat
             println!("Taking: {}", result.taking_amount);
         }
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&post_order_to_json(result)).unwrap()
-            );
+            super::print_json(&post_order_to_json(result))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_post_orders_result(results: &[PostOrderResponse], output: &OutputFormat) {
+pub fn print_post_orders_result(
+    results: &[PostOrderResponse],
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             for (i, r) in results.iter().enumerate() {
                 if i > 0 {
                     println!("---");
                 }
-                print_post_order_result(r, output);
+                print_post_order_result(r, output)?;
             }
         }
         OutputFormat::Json => {
             let data: Vec<_> = results.iter().map(post_order_to_json).collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_cancel_result(result: &CancelOrdersResponse, output: &OutputFormat) {
+pub fn print_cancel_result(
+    result: &CancelOrdersResponse,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if !result.canceled.is_empty() {
@@ -818,17 +831,18 @@ pub fn print_cancel_result(result: &CancelOrdersResponse, output: &OutputFormat)
                 "canceled": result.canceled,
                 "not_canceled": result.not_canceled,
             });
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_trades(result: &Page<TradeResponse>, output: &OutputFormat) {
+pub fn print_trades(result: &Page<TradeResponse>, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.data.is_empty() {
                 println!("No trades found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -886,9 +900,10 @@ pub fn print_trades(result: &Page<TradeResponse>, output: &OutputFormat) {
                 })
                 .collect();
             let wrapper = json!({"data": data, "next_cursor": result.next_cursor});
-            println!("{}", serde_json::to_string_pretty(&wrapper).unwrap());
+            super::print_json(&wrapper)?;
         }
     }
+    Ok(())
 }
 
 /// USDC uses 6 decimal places on-chain.
@@ -898,7 +913,7 @@ pub fn print_balance(
     result: &BalanceAllowanceResponse,
     is_collateral: bool,
     output: &OutputFormat,
-) {
+) -> anyhow::Result<()> {
     let divisor = Decimal::from(10u64.pow(USDC_DECIMALS));
     let human_balance = result.balance / divisor;
     match output {
@@ -925,17 +940,21 @@ pub fn print_balance(
                 "balance": human_balance.to_string(),
                 "allowances": allowances,
             });
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_notifications(result: &[NotificationResponse], output: &OutputFormat) {
+pub fn print_notifications(
+    result: &[NotificationResponse],
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.is_empty() {
                 println!("No notifications.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -981,17 +1000,21 @@ pub fn print_notifications(result: &[NotificationResponse], output: &OutputForma
                     })
                 })
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_rewards(result: &Page<UserEarningResponse>, output: &OutputFormat) {
+pub fn print_rewards(
+    result: &Page<UserEarningResponse>,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.data.is_empty() {
                 println!("No reward earnings found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -1036,17 +1059,21 @@ pub fn print_rewards(result: &Page<UserEarningResponse>, output: &OutputFormat) 
                 })
                 .collect();
             let wrapper = json!({"data": data, "next_cursor": result.next_cursor});
-            println!("{}", serde_json::to_string_pretty(&wrapper).unwrap());
+            super::print_json(&wrapper)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_earnings(result: &[TotalUserEarningResponse], output: &OutputFormat) {
+pub fn print_earnings(
+    result: &[TotalUserEarningResponse],
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.is_empty() {
                 println!("No earnings data found.");
-                return;
+                return Ok(());
             }
             for (i, e) in result.iter().enumerate() {
                 if i > 0 {
@@ -1071,17 +1098,21 @@ pub fn print_earnings(result: &[TotalUserEarningResponse], output: &OutputFormat
                     })
                 })
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_user_earnings_markets(result: &[UserRewardsEarningResponse], output: &OutputFormat) {
+pub fn print_user_earnings_markets(
+    result: &[UserRewardsEarningResponse],
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.is_empty() {
                 println!("No earnings data found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -1144,17 +1175,21 @@ pub fn print_user_earnings_markets(result: &[UserRewardsEarningResponse], output
                     })
                 })
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_reward_percentages(result: &RewardsPercentagesResponse, output: &OutputFormat) {
+pub fn print_reward_percentages(
+    result: &RewardsPercentagesResponse,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.is_empty() {
                 println!("No reward percentages found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -1178,17 +1213,21 @@ pub fn print_reward_percentages(result: &RewardsPercentagesResponse, output: &Ou
                 .iter()
                 .map(|(k, v)| (k.clone(), json!(v.to_string())))
                 .collect();
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+            super::print_json(&data)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_current_rewards(result: &Page<CurrentRewardResponse>, output: &OutputFormat) {
+pub fn print_current_rewards(
+    result: &Page<CurrentRewardResponse>,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.data.is_empty() {
                 println!("No current rewards found.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -1237,17 +1276,21 @@ pub fn print_current_rewards(result: &Page<CurrentRewardResponse>, output: &Outp
                 })
                 .collect();
             let wrapper = json!({"data": data, "next_cursor": result.next_cursor});
-            println!("{}", serde_json::to_string_pretty(&wrapper).unwrap());
+            super::print_json(&wrapper)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_market_reward(result: &Page<MarketRewardResponse>, output: &OutputFormat) {
+pub fn print_market_reward(
+    result: &Page<MarketRewardResponse>,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.data.is_empty() {
                 println!("No market reward data found.");
-                return;
+                return Ok(());
             }
             for (i, r) in result.data.iter().enumerate() {
                 if i > 0 {
@@ -1302,29 +1345,34 @@ pub fn print_market_reward(result: &Page<MarketRewardResponse>, output: &OutputF
                 })
                 .collect();
             let wrapper = json!({"data": data, "next_cursor": result.next_cursor});
-            println!("{}", serde_json::to_string_pretty(&wrapper).unwrap());
+            super::print_json(&wrapper)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_order_scoring(result: &OrderScoringResponse, output: &OutputFormat) {
+pub fn print_order_scoring(
+    result: &OrderScoringResponse,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => println!("Scoring: {}", result.scoring),
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({"scoring": result.scoring})).unwrap()
-            );
+            super::print_json(&json!({"scoring": result.scoring}))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_orders_scoring(result: &OrdersScoringResponse, output: &OutputFormat) {
+pub fn print_orders_scoring(
+    result: &OrdersScoringResponse,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             if result.is_empty() {
                 println!("No scoring data.");
-                return;
+                return Ok(());
             }
             #[derive(Tabled)]
             struct Row {
@@ -1344,42 +1392,41 @@ pub fn print_orders_scoring(result: &OrdersScoringResponse, output: &OutputForma
             println!("{table}");
         }
         OutputFormat::Json => {
-            println!("{}", serde_json::to_string_pretty(result).unwrap());
+            super::print_json(result)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_api_keys(result: &ApiKeysResponse, output: &OutputFormat) {
-    // ApiKeysResponse.keys is private with no public accessor — Debug is the only option.
-    // Strip the wrapper to show just the key list.
+pub fn print_api_keys(result: &ApiKeysResponse, output: &OutputFormat) -> anyhow::Result<()> {
+    // SDK limitation: ApiKeysResponse.keys is private with no public accessor or Serialize impl.
+    // We use Debug output as the only available representation.
     let debug = format!("{result:?}");
-    let keys_str = debug
-        .strip_prefix("ApiKeysResponse { keys: ")
-        .and_then(|s| s.strip_suffix(" }"))
-        .unwrap_or(&debug);
     match output {
         OutputFormat::Table => {
-            println!("API Keys: {keys_str}");
+            println!("API Keys: {debug}");
         }
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({"api_keys": keys_str})).unwrap()
-            );
+            super::print_json(&json!({"api_keys": debug}))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_delete_api_key(result: &serde_json::Value, output: &OutputFormat) {
+pub fn print_delete_api_key(
+    result: &serde_json::Value,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => println!("API key deleted: {result}"),
         OutputFormat::Json => {
-            println!("{}", serde_json::to_string_pretty(result).unwrap());
+            super::print_json(result)?;
         }
     }
+    Ok(())
 }
 
-pub fn print_create_api_key(result: &Credentials, output: &OutputFormat) {
+pub fn print_create_api_key(result: &Credentials, output: &OutputFormat) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             println!("API Key: {}", result.key());
@@ -1387,20 +1434,20 @@ pub fn print_create_api_key(result: &Credentials, output: &OutputFormat) {
             println!("Passphrase: [redacted]");
         }
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({
-                    "api_key": result.key().to_string(),
-                    "secret": "[redacted]",
-                    "passphrase": "[redacted]",
-                }))
-                .unwrap()
-            );
+            super::print_json(&json!({
+                "api_key": result.key().to_string(),
+                "secret": "[redacted]",
+                "passphrase": "[redacted]",
+            }))?;
         }
     }
+    Ok(())
 }
 
-pub fn print_account_status(result: &BanStatusResponse, output: &OutputFormat) {
+pub fn print_account_status(
+    result: &BanStatusResponse,
+    output: &OutputFormat,
+) -> anyhow::Result<()> {
     match output {
         OutputFormat::Table => {
             println!(
@@ -1413,10 +1460,8 @@ pub fn print_account_status(result: &BanStatusResponse, output: &OutputFormat) {
             );
         }
         OutputFormat::Json => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({"closed_only": result.closed_only})).unwrap()
-            );
+            super::print_json(&json!({"closed_only": result.closed_only}))?;
         }
     }
+    Ok(())
 }

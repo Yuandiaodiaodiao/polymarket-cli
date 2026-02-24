@@ -13,6 +13,8 @@ pub struct ApprovalStatus {
     pub contract_address: String,
     pub usdc_allowance: U256,
     pub ctf_approved: bool,
+    pub usdc_error: Option<String>,
+    pub ctf_error: Option<String>,
 }
 
 #[derive(Tabled)]
@@ -51,13 +53,20 @@ pub fn print_approval_status(statuses: &[ApprovalStatus], output: &OutputFormat)
             let json: Vec<serde_json::Value> = statuses
                 .iter()
                 .map(|s| {
-                    serde_json::json!({
+                    let mut obj = serde_json::json!({
                         "contract": s.contract_name,
                         "address": s.contract_address,
                         "usdc_allowance": s.usdc_allowance.to_string(),
                         "usdc_approved": s.usdc_allowance > U256::ZERO,
                         "ctf_approved": s.ctf_approved,
-                    })
+                    });
+                    if let Some(ref err) = s.usdc_error {
+                        obj["usdc_error"] = serde_json::Value::String(err.clone());
+                    }
+                    if let Some(ref err) = s.ctf_error {
+                        obj["ctf_error"] = serde_json::Value::String(err.clone());
+                    }
+                    obj
                 })
                 .collect();
             println!("{}", serde_json::to_string_pretty(&json)?);
@@ -68,8 +77,16 @@ pub fn print_approval_status(statuses: &[ApprovalStatus], output: &OutputFormat)
                 .iter()
                 .map(|s| ApprovalRow {
                     contract: s.contract_name.clone(),
-                    usdc: format_allowance(s.usdc_allowance),
-                    ctf: format_ctf(s.ctf_approved),
+                    usdc: if let Some(ref err) = s.usdc_error {
+                        format!("\u{2717} RPC error: {err}")
+                    } else {
+                        format_allowance(s.usdc_allowance)
+                    },
+                    ctf: if let Some(ref err) = s.ctf_error {
+                        format!("\u{2717} RPC error: {err}")
+                    } else {
+                        format_ctf(s.ctf_approved)
+                    },
                 })
                 .collect();
             let table = tabled::Table::new(rows).with(Style::rounded()).to_string();

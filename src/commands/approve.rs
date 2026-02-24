@@ -109,23 +109,25 @@ async fn check(
     let mut statuses = Vec::new();
 
     for target in &targets {
-        let usdc_allowance = usdc
-            .allowance(owner, target.address)
-            .call()
-            .await
-            .unwrap_or(U256::ZERO);
+        let (usdc_allowance, usdc_error) = match usdc.allowance(owner, target.address).call().await
+        {
+            Ok(val) => (val, None),
+            Err(e) => (U256::ZERO, Some(e.to_string())),
+        };
 
-        let ctf_approved = ctf
-            .isApprovedForAll(owner, target.address)
-            .call()
-            .await
-            .unwrap_or(false);
+        let (ctf_approved, ctf_error) =
+            match ctf.isApprovedForAll(owner, target.address).call().await {
+                Ok(val) => (val, None),
+                Err(e) => (false, Some(e.to_string())),
+            };
 
         statuses.push(ApprovalStatus {
             contract_name: target.name.to_string(),
             contract_address: format!("{}", target.address),
             usdc_allowance,
             ctf_approved,
+            usdc_error,
+            ctf_error,
         });
     }
 
