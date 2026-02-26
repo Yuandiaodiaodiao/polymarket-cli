@@ -78,7 +78,8 @@ The config file (`~/.config/polymarket/config.json`):
 {
   "private_key": "0x...",
   "chain_id": 137,
-  "signature_type": "proxy"
+  "signature_type": "proxy",
+  "fund_wallet": "0xYourGnosisSafeAddress"
 }
 ```
 
@@ -89,6 +90,25 @@ The config file (`~/.config/polymarket/config.json`):
 - `gnosis-safe` — for multisig wallets
 
 Override per-command with `--signature-type eoa` or via `POLYMARKET_SIGNATURE_TYPE`.
+
+### Fund Wallet (Gnosis Safe Override)
+
+When using `gnosis-safe` signature type, the SDK auto-derives a funder address from your signer key via CREATE2. If your Gnosis Safe address doesn't match the auto-derived one (e.g., created on polymarket.com), you can override it:
+
+1. **CLI flag**: `--fund-wallet 0xYourSafeAddress`
+2. **Environment variable**: `POLYMARKET_FUND_WALLET=0xYourSafeAddress`
+3. **Config file**: set `"fund_wallet"` in `config.json`
+
+```bash
+# Set via wallet import
+polymarket wallet import 0xKEY --signature-type gnosis-safe --fund-wallet 0xSAFE_ADDR
+
+# Override per-command
+polymarket --fund-wallet 0xSAFE_ADDR clob balance --asset-type collateral
+
+# Via env var
+export POLYMARKET_FUND_WALLET=0xSAFE_ADDR
+```
 
 ### What Needs a Wallet
 

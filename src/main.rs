@@ -26,6 +26,10 @@ pub(crate) struct Cli {
     /// Signature type: eoa, proxy, or gnosis-safe
     #[arg(long, global = true)]
     signature_type: Option<String>,
+
+    /// Fund wallet address (overrides auto-derived funder for gnosis-safe)
+    #[arg(long, global = true)]
+    fund_wallet: Option<String>,
 }
 
 #[derive(Subcommand)]
@@ -159,6 +163,7 @@ pub(crate) async fn run(cli: Cli) -> anyhow::Result<()> {
                 cli.output,
                 cli.private_key.as_deref(),
                 cli.signature_type.as_deref(),
+                cli.fund_wallet.as_deref(),
             )
             .await
         }

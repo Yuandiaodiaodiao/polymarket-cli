@@ -132,7 +132,7 @@ fn setup_wallet() -> Result<Address> {
         (address, hex)
     };
 
-    config::save_wallet(&key_hex, POLYGON, config::DEFAULT_SIGNATURE_TYPE)?;
+    config::save_wallet(&key_hex, POLYGON, config::DEFAULT_SIGNATURE_TYPE, None)?;
 
     if has_key {
         println!("  ✓ Wallet imported");
@@ -157,6 +157,8 @@ fn finish_setup(address: Address) -> Result<()> {
     step_header(2, total, "Proxy Wallet");
 
     let proxy = derive_proxy_wallet(address, POLYGON);
+    let fund_wallet = crate::config::resolve_fund_wallet(None);
+
     match proxy {
         Some(proxy) => {
             println!("  ✓ Proxy wallet derived");
@@ -173,7 +175,14 @@ fn finish_setup(address: Address) -> Result<()> {
 
     step_header(3, total, "Fund Wallet");
 
-    let deposit_addr = proxy.unwrap_or(address);
+    let deposit_addr = if let Some(ref fw) = fund_wallet {
+        println!("  ✓ Using configured fund wallet");
+        println!("    Fund wallet: {fw}");
+        fw.clone()
+    } else {
+        let addr = proxy.unwrap_or(address);
+        addr.to_string()
+    };
     println!("  ○ Deposit USDC to your wallet to start trading");
     println!("    Run: polymarket bridge deposit {deposit_addr}");
     println!("    Or transfer USDC directly on Polygon");
